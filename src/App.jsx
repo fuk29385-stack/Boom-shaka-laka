@@ -15,6 +15,7 @@ import ReviewsPage from './pages/ReviewsPage.jsx'
 import ContactsPage from './pages/ContactsPage.jsx'
 import AuthPage from './pages/AuthPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
+import { api } from './lib/api.js'
 
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const RM = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -36,7 +37,7 @@ export default class App extends Component {
     cat: 'all', q: '', fTemp: 'all', fMilk: 'all', loading: true, ignoreForced: false,
     sheet: null, sheetClosing: false, cfg: { size: 'M', milk: 'reg', syrup: 'none', qty: 1 },
     cart: [], disp: 0, time: 'asap', order: null, toast: null, readyNote: false,
-    user: null, authTab: 'login', form: {}, touched: {}, focus: null, authBusy: false, favPoint: 'p1',
+    user: null, authToken: null, authTab: 'login', form: {}, touched: {}, focus: null, authBusy: false, favPoint: 'p1',
     revPoint: 'all', myRating: 0, hoverRating: 0, revTags: [], revSent: false, revFormPoint: 'p1', reviews: REVIEWS.slice(),
     fbSent: false, fbBusy: false, faqOpen: 0, navL: 0, navW: 0,
   };
@@ -213,19 +214,22 @@ export default class App extends Component {
     for (let i = 0; i < 3; i++) { const t = new Date(base.getTime() + i * 15 * 60000); const lbl = String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); out.push({ id: lbl, label: 'к ' + lbl }); }
     return out;
   }
-  placeOrder() {
+  async placeOrder() {
     const p = this.point();
     if (p.status === 'closed' || !this.state.cart.length) return;
     if (this.state.order && this.state.order.status !== 'ready') return;
     const base = 40 + Math.floor(Math.random() * 40), code = n => p.letter + '-' + String(n).padStart(3, '0');
     const ahead = []; for (let i = p.queue; i > 0; i--) ahead.push(code(base - i));
     const slot = this.slots().find(x => x.id === this.state.time) || this.slots()[0];
-    const order = { num: code(base), pointId: p.id, initialAhead: p.queue, ahead, step: 0, prep: 0, status: 'accepted', items: this.state.cart.slice(), total: this.total(), fulfillmentType: 'pickup', pickupTime: this.state.time === 'asap' ? 'как можно скорее' : this.state.time, pickupLabel: slot.label };
-    this.setState({ order, cart: [], sheet: null, sheetClosing: false, route: 'queue', readyNote: false, time: 'asap' });
-    window.scrollTo({ top: 0 });
-    this.toast('Заказ ' + order.num + ' принят', 'check');
-    clearInterval(this.qt);
-    this.qt = setInterval(() => this.tick(), (this.props.queueSpeed || 4) * 1000);
+    try {
+      const created = await api('/orders', { method: 'POST', headers: this.state.authToken ? { Authorization: 'Bearer ' + this.state.authToken } : {}, body: { pointId: p.id, pickupTime: this.state.time, fulfillmentType: 'pickup', items: this.state.cart.map(line => ({ id: line.id, quantity: line.qty, additionsPrice: Math.max(0, line.unit - (MENU.find(item => item.id === line.id)?.price || 0)) })) } });
+      const order = { num: created.number, id: created.id, pointId: p.id, initialAhead: created.queueAhead, ahead, step: 0, prep: 0, status: created.status, items: this.state.cart.slice(), total: created.total, fulfillmentType: 'pickup', pickupTime: created.pickupTime === 'asap' ? 'как можно скорее' : created.pickupTime, pickupLabel: slot.label };
+      this.setState({ order, cart: [], sheet: null, sheetClosing: false, route: 'queue', readyNote: false, time: 'asap' });
+      window.scrollTo({ top: 0 });
+      this.toast('Заказ ' + order.num + ' принят', 'check');
+      clearInterval(this.qt);
+      this.qt = setInterval(() => this.tick(), (this.props.queueSpeed || 4) * 1000);
+    } catch (err) { this.toast(err.message || 'Не удалось оформить заказ', 'alert'); }
   }
   tick() {
     const o = this.state.order;
@@ -276,30 +280,40 @@ export default class App extends Component {
     bad.forEach(k => this.shake(`[data-field="${k}"]`));
     return bad.length === 0;
   }
-  submitAuth(e) {
+  async submitAuth(e) {
     e.preventDefault();
     const reg = this.state.authTab === 'register', keys = reg ? ['name', 'login', 'pw'] : ['login', 'pw'];
     if (!this.validate(keys) || this.state.authBusy) return;
     this.setState({ authBusy: true });
-    setTimeout(() => {
-      const f = this.state.form, name = reg ? f.name.trim() : (f.login.includes('@') ? f.login.split('@')[0] : 'гость');
-      const fav = reg ? this.state.favPoint : this.state.pointId;
-      this.setState({ authBusy: false, user: { name, contact: f.login.trim(), fav }, pointId: fav, touched: {} });
-      this.toast(reg ? 'Аккаунт создан, добро пожаловать!' : 'С возвращением, ' + name, 'check');
-    }, 900);
+    const f = this.state.form;
+    try {
+      const result = await api('/auth/' + (reg ? 'register' : 'login'), { method: 'POST', body: reg ? { name: f.name.trim(), login: f.login.trim(), password: f.pw, favoritePointId: this.state.favPoint } : { login: f.login.trim(), password: f.pw } });
+      const fav = result.user.favoritePointId || this.state.pointId;
+      this.setState({ authBusy: false, authToken: result.token, user: { name: result.user.name, contact: result.user.login, fav }, pointId: fav, touched: {} });
+      this.toast(reg ? 'Аккаунт создан, добро пожаловать!' : 'С возвращением, ' + result.user.name, 'check');
+    } catch (err) {
+      this.setState({ authBusy: false });
+      this.toast(err.message || 'Не удалось выполнить вход', 'alert');
+    }
   }
-  submitFb(e) {
+  async submitFb(e) {
     e.preventDefault();
     if (!this.validate(['fbName', 'fbContact', 'fbMsg']) || this.state.fbBusy) return;
     this.setState({ fbBusy: true });
-    setTimeout(() => this.setState({ fbBusy: false, fbSent: true }), 900);
+    try {
+      await api('/feedback', { method: 'POST', body: { name: this.state.form.fbName, contact: this.state.form.fbContact, message: this.state.form.fbMsg } });
+      this.setState({ fbBusy: false, fbSent: true });
+    } catch (err) { this.setState({ fbBusy: false }); this.toast(err.message || 'Не удалось отправить сообщение', 'alert'); }
   }
-  submitReview() {
+  async submitReview() {
     const s = this.state;
     if (!s.myRating) { this.shake('[data-stars]'); return this.toast('Поставь оценку звёздами', 'star'); }
-    const r = { name: s.user ? s.user.name : 'Гость', point: s.revFormPoint, rating: s.myRating, text: (s.form.revText || '').trim() || 'Без комментария, просто понравилось.', tags: s.revTags, date: 'только что' };
-    this.setState({ reviews: [r].concat(s.reviews), revSent: true, revPoint: 'all' });
-    setTimeout(() => this.setState(st => ({ revSent: false, myRating: 0, hoverRating: 0, revTags: [], form: Object.assign({}, st.form, { revText: '' }) })), 3800);
+    try {
+      const saved = await api('/reviews', { method: 'POST', headers: s.authToken ? { Authorization: 'Bearer ' + s.authToken } : {}, body: { name: s.user?.name, pointId: s.revFormPoint, rating: s.myRating, text: (s.form.revText || '').trim() || 'Без комментария, просто понравилось.', tags: s.revTags } });
+      const r = { name: saved.name, point: saved.pointId, rating: saved.rating, text: saved.text, tags: saved.tags, date: 'только что' };
+      this.setState({ reviews: [r].concat(s.reviews), revSent: true, revPoint: 'all' });
+      setTimeout(() => this.setState(st => ({ revSent: false, myRating: 0, hoverRating: 0, revTags: [], form: Object.assign({}, st.form, { revText: '' }) })), 3800);
+    } catch (err) { this.toast(err.message || 'Не удалось отправить отзыв', 'alert'); }
   }
   chip(label, active, on, extra) {
     return Object.assign({ label, on, pressed: active ? 'true' : 'false', bg: active ? 'var(--cta)' : 'var(--surface)', fg: active ? 'var(--cta-ink)' : 'var(--text)', bc: active ? 'var(--cta)' : 'var(--line)' }, extra || {});
