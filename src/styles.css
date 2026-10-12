@@ -1,0 +1,54 @@
+/* Токены и анимации из макета Monster Coffee */
+:root,[data-theme="light"]{--bg:#FAF6F0;--surface:#FFFDFA;--beige:#F2E9DD;--cap:#D9C2A7;--text:#5A4636;--muted:#77614F;--line:rgba(90,70,54,.12);--pink:#F4DCDA;--pink-ink:#9B4E55;--sage:#DCE6D3;--sage-ink:#4B6141;--lav:#E5E0F2;--lav-ink:#5B4F86;--peach:#F6E3C9;--peach-ink:#85561F;--cta:#5A4636;--cta-ink:#FAF6F0;--cta-hover:#6C5644;--glow:rgba(217,194,167,.5);--track:#EADFD0;--sh1:0 2px 12px rgba(90,70,54,.06);--sh2:0 14px 34px rgba(90,70,54,.12);--sh3:0 24px 60px rgba(90,70,54,.18);--nav:rgba(250,246,240,.8)}
+[data-theme="dark"]{--bg:#2B211B;--surface:#362A22;--beige:#41332A;--cap:#8A705A;--text:#F4E8DA;--muted:#CDB8A3;--line:rgba(244,232,218,.12);--pink:#4E3538;--pink-ink:#F3C6C6;--sage:#34412F;--sage-ink:#C8DBB9;--lav:#3B3549;--lav-ink:#D6CDF2;--peach:#4A3926;--peach-ink:#F2CF9F;--cta:#EAD5BA;--cta-ink:#2B211B;--cta-hover:#F4E3CC;--glow:rgba(234,213,186,.18);--track:#4A3B30;--sh1:0 2px 12px rgba(0,0,0,.2);--sh2:0 14px 34px rgba(0,0,0,.3);--sh3:0 24px 60px rgba(0,0,0,.45);--nav:rgba(43,33,27,.82)}
+html,body{margin:0;background:#FAF6F0}
+*,*::before,*::after{box-sizing:border-box}
+button,input,textarea{font:inherit;color:inherit}
+a{color:var(--text);text-underline-offset:3px}
+a:hover{color:var(--pink-ink)}
+:focus{outline:none}
+:focus-visible{outline:2.5px solid var(--text);outline-offset:3px}
+::selection{background:var(--pink)}
+input::placeholder,textarea::placeholder{color:var(--muted)}
+@keyframes pageIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes cardIn{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes steam{0%{transform:translateY(6px);opacity:0}35%{opacity:.55}100%{transform:translateY(-22px);opacity:0}}
+@keyframes breathe{0%{transform:scale(1);opacity:.7}70%,100%{transform:scale(2.6);opacity:0}}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+@keyframes sheetDown{from{transform:none}to{transform:translateY(100%)}}
+@keyframes popIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(12px) scale(.97)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+@keyframes toastIn{from{opacity:0;transform:translateY(-16px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(0)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-10px) rotate(var(--r,0deg))}}
+@keyframes blob{0%,100%{border-radius:58% 42% 55% 45%/48% 55% 45% 52%}50%{border-radius:45% 55% 42% 58%/55% 45% 55% 45%}}
+@keyframes starPop{0%{transform:scale(0) rotate(-40deg);opacity:0}70%{transform:scale(1.2) rotate(6deg);opacity:1}100%{transform:none;opacity:1}}
+@keyframes growX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes heroRise{from{opacity:0;transform:translateY(28px);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes wiggle{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+
+/* Состояния наведения/нажатия (в макете были style-hover / style-active) */
+.hover-cta:hover{background:var(--cta-hover) !important}
+.hover-bg:hover{background:var(--bg) !important}
+.hover-beige:hover{background:var(--beige) !important}
+.hover-pop:hover{transform:translateY(-2px) scale(1.02) !important}
+.hover-card:hover{transform:translateY(-4px) scale(1.02) !important;box-shadow:var(--sh2) !important}
+.hover-plus:hover{transform:scale(1.12) rotate(90deg) !important}
+.hover-cta-lift:hover{background:var(--cta-hover) !important;transform:translateY(-2px) !important}
+.hover-pop-sm:hover{transform:translateY(-2px) scale(1.01) !important}
+.hover-lift:hover{transform:translateY(-2px) !important}
+.hover-lift-shadow:hover{transform:translateY(-1px) !important;box-shadow:var(--sh2) !important}
+.hover-nudge:hover{transform:translateY(-1px) !important}
+.hover-star:hover{transform:scale(1.15) rotate(-6deg) !important}
+.hover-tilt:hover{transform:rotate(-14deg) scale(1.05) !important}
+.hover-hero:hover{background:var(--cta-hover) !important;transform:translateY(-2px) scale(1.02) !important;box-shadow:0 16px 40px var(--glow) !important}
+.hover-cta-nudge:hover{background:var(--cta-hover) !important;transform:translateY(-1px) !important}
+.focus-glow:focus{border-color:var(--cap) !important;box-shadow:0 0 0 4px var(--glow) !important}
+.press:active{transform:scale(.98) !important}
+.press-deep:active{transform:scale(.9) !important}
+.press-md:active{transform:scale(.92) !important}
